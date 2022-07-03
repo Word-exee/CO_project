@@ -28,6 +28,7 @@ flag_var=1 # TO INDICATE VARIABLES ARE BEING DECLARED, IF 0 THEN RESULTS IN AN E
 output_list=[] # TO FIRST TRAVERSE THE WHOLE CODE AND PRINT A MACHINE CODE ONLY IF FULLY CORRECT
 
 hlt = 0 # last command of input is hlt
+
 #INPUT
 
 l=[]
@@ -38,10 +39,6 @@ for line in sys.stdin:
         l.append(line.split())
         if line[0:3]!='var':
             count_instruction+=1
-
-if l[-1]!=['hlt']:
-    hlt = 1
-    print("ERROR : hlt not used as last instruction")
 
 #FUNCTIONS
 
@@ -100,19 +97,59 @@ def typeE(instruction):
 
 
 def errorgen(instruction,line_number):
+    #handling hlt
+    if l[-1]!=["hlt"]:
+        print(f"ERROR @LINE{line_number}: SYNTAX ERROR: hlt instruction must be used at end")
+        return 0
+
     # ILLEGAL/INVALID INSTRUCTION
     if instruction[0] not in all_instructions:
         print(f"ERROR @LINE{line_number}: SYNTAX ERROR:INVALID INSTRUCTION OR INSTRUCTION NOT FOUND")
         return 0
-    
+
     # USE OF INVALID REGISTERS FOR LEN 3
     if len(instruction)==3:
         for i in range(1,3):
             if (instruction[i])[0] == "R":
                 if(instruction[i]) not in registers.keys():
                     print(f"ERROR @LINE{line_number}: INVALID INPUT OF REGISTERS")
-                    break
-        return 0
+                    return 0
+    
+    # Extra length of type registers in type a
+    if instruction[0] in type_a.keys():
+        if len(instruction)!=4:
+            print(f"ERROR @LINE{line_number}: GENERAL ERROR: invalid inputs for instructions")
+            return 0
+
+    # Extra length of type registers in type b
+    if instruction[0] in type_b.keys():
+        if len(instruction)!=3:
+            print(f"ERROR @LINE{line_number}: GENERAL ERROR: invalid inputs for instructions")
+            return 0
+    
+    # Extra length of type registers in type c
+    if instruction[0] in type_c.keys():
+        if len(instruction)!=3:
+            print(f"ERROR @LINE{line_number}: GENERAL ERROR: invalid inputs for instructions")
+            return 0
+    
+    # Extra length of type registers in type d
+    if instruction[0] in type_d.keys():
+        if len(instruction)!=3:
+            print(f"ERROR @LINE{line_number}: GENERAL ERROR: invalid inputs for instructions")
+            return 0
+    
+    # Extra length of type registers in type e
+    if instruction[0] in type_d.keys():
+        if len(instruction)!=2:
+            print(f"ERROR @LINE{line_number}: GENERAL ERROR: invalid inputs for instructions")
+            return 0
+    
+    # Extra length of type registers in type f
+    if instruction[0] in type_d.keys():
+        if len(instruction)!=1:
+            print(f"ERROR @LINE{line_number}: GENERAL ERROR: invalid inputs for instructions")
+            return 0
 
     # USE OF INVALID REGISTERS FOR LEN 4
     if len(instruction)==4:
@@ -120,8 +157,13 @@ def errorgen(instruction,line_number):
             if (instruction[i])[0] == "R":
                 if(instruction[i]) not in registers.keys():
                     print(f"ERROR @LINE{line_number}: INVALID INPUT OF REGISTERS")
-                    break
-        return 0
+                    return 0
+                    
+    # handling $
+    if instruction[0] in type_b.keys():
+        if instruction[2][0]!= "$":
+            print(f"ERROR @LINE{line_number}: GENERAL ERROR: IMMEDIATE VALUE NOT FOUND")
+            return 0
 
     # USE OF lmm <= 255 and >= 0.
     if len(instruction)==3:
@@ -130,68 +172,98 @@ def errorgen(instruction,line_number):
             value=value[1:]
             if int(value)>=256 or int(value)<0:
                 print(f"ERROR @LINE{line_number}: ERROR IMMEDIATE VALUE OVERFLOW")
-        return 0
-
+                return 0
+    
     # A mem_addr in load and store must be a variable.
     if len(instruction)==3:
         if instruction[2][0] not in variables.keys():
             print(f"ERROR @LINE{line_number}: GENERAL ERROR : MEM ADDER MUST BE A DECLARED VARIABLE")
-        return 0
+            return 0
 
     # Variable declared in middle of program
     if instruction[0]=='var' and flag_var==0:
         print(f"ERROR @LINE{line_number}: VARIABLES TO BE DECLARED AT THE STARTING ONLY")
-        return 0
+        return 0     
 
     #variable label not declared
     if instruction[0] in type_e.keys():
         if instruction[1] not in labels.keys():
             print(f"ERROR @LINE{line_number}: GENERAL ERROR : label not declared")
-        return 0
+            return 0  
     
     # HLT INSTRUCTION DECLARED IN MIDDLE
     if count!=len(l) and instruction[0]=="hlt":
         print(f"ERROR @LINE{line_number}: HLT INSTRUCTION MUST BE DECLARED AT THE END OF THE PROGRAM. ")
+        return 0
     elif count==len(l) and len(instruction)==1 and instruction[0]!='hlt':
         print(f"ERROR @LINE{line_number}: HLT INSTRUCTION NOT FOUND")
+        return 0
+    
+
+
 
 #LIST 'l' TRAVERSING USING FOR LOOP ('l' is where our input code stored)
 
-if hlt==0:
-    try:    
-        for line in l:
-            if line[0]=='var':
-                assert flag_var==1
-                variables[line[1]]=decimalTobinary(var_initial+count_instruction)
-                var_initial+=1
-                count+=1
-                continue
-            else:
-                flag_var=0
-                if (len(line)==1):
-                    assert line[0]=='hlt'
-                    assert count==len(l)-1
-                    output_list.append('0101000000000000')
 
-                elif (len(line)==2):
-                    if line[0][-1]==':':
-                        label=line[0]
-                        length_label=len(label)
-                        label_name=label[0:length_label-1]
-                        if label_name not in labels:
-                            labels[label_name]=decimalTobinary(count)
-                        line=line[1:]
+try:
+    assert l[-1][-1]=="hlt"    
+    for line in l:
+        if line[0]=='var':
+            assert flag_var==1
+            variables[line[1]]=decimalTobinary(var_initial+count_instruction)
+            var_initial+=1
+            count+=1
+            continue
+        else:
+            flag_var=0
+            if (len(line)==1):
+                assert line[0]=='hlt'
+                assert count==len(l)-1
+                output_list.append('0101000000000000')
 
-                        if line[0]=='hlt' and count==len(l)-1:
-                            output_list.append('0101000000000000')
-                        else:
-                            assert False
-                            
+            elif (len(line)==2):
+                if line[0][-1]==':':
+                    label=line[0]
+                    length_label=len(label)
+                    label_name=label[0:length_label-1]
+                    if label_name not in labels:
+                        labels[label_name]=decimalTobinary(count)
+                    line=line[1:]
+
+                    if line[0]=='hlt' and count==len(l)-1:
+                        output_list.append('0101000000000000')
                     else:
+                        assert False
+                        
+                else:
+                    assert line[0] in type_e
+                    if line[1] in labels:
+                        typeE(line)
+                    else:
+                        for line_e in l:
+                            if line_e[0][-1]==':':                               
+                                label=line_e[0]                               
+                                length_label=len(label)
+                                label_name=label[0:length_label-1]                                
+                                assert label_name==line[1]                               
+                                index=l.index(line_e)
+                                labels[label_name]=decimalTobinary(index)
+                        typeE(line)
+            elif len(line)==3:
+                if line[0][-1]==':':
+                    label=line[0]
+                    length_label=len(label)
+                    label_name=label[0:length_label-1]
+                    if label_name not in labels:
+                        labels[label_name]=decimalTobinary(count)
+                    line=line[1:]
+
+                    if (len(line)==2):
                         assert line[0] in type_e
                         if line[1] in labels:
                             typeE(line)
                         else:
+                            
                             for line_e in l:
                                 if line_e[0][-1]==':':                               
                                     label=line_e[0]                               
@@ -201,31 +273,59 @@ if hlt==0:
                                     index=l.index(line_e)
                                     labels[label_name]=decimalTobinary(index)
                             typeE(line)
-                elif len(line)==3:
-                    if line[0][-1]==':':
-                        label=line[0]
-                        length_label=len(label)
-                        label_name=label[0:length_label-1]
-                        if label_name not in labels:
-                            labels[label_name]=decimalTobinary(count)
-                        line=line[1:]
-
-                        if (len(line)==2):
-                            assert line[0] in type_e
-                            if line[1] in labels:
-                                typeE(line)
+                else:
+                    if line[0]=='mov':
+                        if line[2][0]=='$':
+                            if line[1]!='FLAGS':
+                                typeB(line)
                             else:
-                                
-                                for line_e in l:
-                                    if line_e[0][-1]==':':                               
-                                        label=line_e[0]                               
-                                        length_label=len(label)
-                                        label_name=label[0:length_label-1]                                
-                                        assert label_name==line[1]                               
-                                        index=l.index(line_e)
-                                        labels[label_name]=decimalTobinary(index)
-                                typeE(line)
+                                assert False
+                        else:
+                            if line[2]!='FLAGS':
+                                typeC(line)
+                            else:
+                                assert False
                     else:
+                        if 'FLAGS' not in line:
+                            if line[0] in type_b:
+                                if line[2][0]=='$':
+                                    typeB(line)
+                                else:
+                                    assert False
+                            elif line[0] in type_c:
+                                typeC(line)
+                            elif line[0] in type_d:
+                                typeD(line)
+                            else:
+                                assert False
+                        else:
+                            assert False
+
+            elif len(line)==4:
+            
+                if line[0][-1]==':':
+                    label=line[0]
+                    length_label=len(label)
+                    label_name=label[0:length_label-1]
+                    labels[label_name]=decimalTobinary(count)
+                    line=line[1:]
+
+                    if (len(line)==2):
+                        assert line[0] in type_e
+                        if line[1] in labels:
+                            typeE(line)
+                        else:
+                            
+                            for line_e in l:
+                                if line_e[0][-1]==':':                               
+                                    label=line_e[0]                               
+                                    length_label=len(label)
+                                    label_name=label[0:length_label-1]                                
+                                    assert label_name==line[1]                               
+                                    index=l.index(line_e)
+                                    labels[label_name]=decimalTobinary(index)
+                            typeE(line)
+                    elif len(line)==3:
                         if line[0]=='mov':
                             if line[2][0]=='$':
                                 if line[1]!='FLAGS':
@@ -240,7 +340,10 @@ if hlt==0:
                         else:
                             if 'FLAGS' not in line:
                                 if line[0] in type_b:
-                                    typeB(line)
+                                    if line[2][0]=='$':
+                                        typeB(line)
+                                    else:
+                                        assert False
                                 elif line[0] in type_c:
                                     typeC(line)
                                 elif line[0] in type_d:
@@ -249,83 +352,34 @@ if hlt==0:
                                     assert False
                             else:
                                 assert False
-
-                elif len(line)==4:
-                
-                    if line[0][-1]==':':
-                        label=line[0]
-                        length_label=len(label)
-                        label_name=label[0:length_label-1]
-                        labels[label_name]=decimalTobinary(count)
-                        line=line[1:]
-
-                        if (len(line)==2):
-                            assert line[0] in type_e
-                            if line[1] in labels:
-                                typeE(line)
-                            else:
-                                
-                                for line_e in l:
-                                    if line_e[0][-1]==':':                               
-                                        label=line_e[0]                               
-                                        length_label=len(label)
-                                        label_name=label[0:length_label-1]                                
-                                        assert label_name==line[1]                               
-                                        index=l.index(line_e)
-                                        labels[label_name]=decimalTobinary(index)
-                                typeE(line)
-                        elif len(line)==3:
-                            if line[0]=='mov':
-                                if line[2][0]=='$':
-                                    if line[1]!='FLAGS':
-                                        typeB(line)
-                                    else:
-                                        assert False
-                                else:
-                                    if line[2]!='FLAGS':
-                                        typeC(line)
-                                    else:
-                                        assert False
-                            else:
-                                if 'FLAGS' not in line:
-                                    if line[0] in type_b:
-                                        typeB(line)
-                                    elif line[0] in type_c:
-                                        typeC(line)
-                                    elif line[0] in type_d:
-                                        typeD(line)
-                                    else:
-                                        assert False
-                                else:
-                                    assert False
-                    else:
-                        if 'FLAGS' not in line:
-                            assert line[0] in type_a
-                            typeA(line)
-                        else:
-                            assert False
-                elif len(line)==5:
-                    if line[0][-1]==':':
-                        label=line[0]
-                        length_label=len(label)
-                        label_name=label[0:length_label-1]
-                        labels[label_name]=decimalTobinary(count)
-                        line=line[1:]
-
+                else:
                     if 'FLAGS' not in line:
                         assert line[0] in type_a
                         typeA(line)
                     else:
                         assert False
+            elif len(line)==5:
+                if line[0][-1]==':':
+                    label=line[0]
+                    length_label=len(label)
+                    label_name=label[0:length_label-1]
+                    labels[label_name]=decimalTobinary(count)
+                    line=line[1:]
 
+                if 'FLAGS' not in line:
+                    assert line[0] in type_a
+                    typeA(line)
                 else:
-                    assert False    
+                    assert False
 
-                count+=1
+            else:
+                assert False    
 
-        # GENERATING OUTPUT
-        for i in output_list:
-            print(i)
+            count+=1
 
-    except:
-        errorgen(line,count+1)
+    # GENERATING OUTPUT
+    for i in output_list:
+        print(i)
+
+except:
+    errorgen(line,count+1)
