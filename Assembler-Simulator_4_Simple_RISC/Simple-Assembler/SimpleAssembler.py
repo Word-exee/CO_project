@@ -29,21 +29,15 @@ output_list=[] # TO FIRST TRAVERSE THE WHOLE CODE AND PRINT A MACHINE CODE ONLY 
 
 hlt = 0 # last command of input is hlt
 
-#INPUT
+count_i=0 # TO ASSIGN MEM_ADDR TO LABELS PRESENT IN ASSEMBLY CODE
 
-l=[]
-for line in sys.stdin:
-    if line == "\n":
-        pass
-    else:
-        l.append(line.split())
-        if line[0:3]!='var':
-            count_instruction+=1
+label_emptyline=0 # TO ASSIGN MEMORY ADDRESS TO INSTRUCTIONS LIKE "Loop: "
 
 #FUNCTIONS
 
 def decimalTobinary(n):
     assert n>=0 and n<=255
+    assert isinstance(n,int)
     n_bin=''
     n=int(n)
     while n>0:
@@ -70,6 +64,7 @@ def typeB(instruction):
     s+=registers[instruction[1]]
     imm=instruction[2]
     imm=imm[1:]
+    assert imm.isdigit()
     s+=decimalTobinary(int(imm))
     output_list.append(s)
 
@@ -170,9 +165,14 @@ def errorgen(instruction,line_number):
         if (instruction[2])[0]=="$":
             value = instruction[2]
             value=value[1:]
-            if int(value)>=256 or int(value)<0:
+            if float(value)>=256 or float(value)<0:
                 print(f"ERROR @LINE{line_number}: ERROR IMMEDIATE VALUE OVERFLOW")
                 return 0
+    
+    #handling immediate value floating number input
+    if (instruction[0] in type_b.keys()) and (instruction[2][0]=="$"):
+        print(f"ERROR @LINE{line_number}: VALUE ERROR: INPUT NOT A DECIMAL VALUE")
+        return 0
     
     # A mem_addr in load and store must be a variable.
     if len(instruction)==3:
@@ -198,15 +198,30 @@ def errorgen(instruction,line_number):
     elif count==len(l) and len(instruction)==1 and instruction[0]!='hlt':
         print(f"ERROR @LINE{line_number}: HLT INSTRUCTION NOT FOUND")
         return 0
-    
 
 
+#INPUT
+
+l=[]
+for line in sys.stdin:
+    if line == "\n":
+        pass
+    else:
+        x=line.split()
+        if len(x)==1 and x[0][-1]==':':
+            label_name=x[0]
+            label_name=label_name[:-1]
+            labels[label_name]=decimalTobinary(count_instruction+label_emptyline)
+            label_emptyline+=1
+        else:
+            l.append(x)
+        if line[0:3]!='var':
+            count_instruction+=1
 
 #LIST 'l' TRAVERSING USING FOR LOOP ('l' is where our input code stored)
 
-
 try:
-    assert l[-1][-1]=="hlt"    
+    assert l[-1][-1]=="hlt"  
     for line in l:
         if line[0]=='var':
             assert flag_var==1
@@ -227,7 +242,7 @@ try:
                     length_label=len(label)
                     label_name=label[0:length_label-1]
                     if label_name not in labels:
-                        labels[label_name]=decimalTobinary(count)
+                        labels[label_name]=decimalTobinary(count_i+label_emptyline)
                     line=line[1:]
 
                     if line[0]=='hlt' and count==len(l)-1:
@@ -244,10 +259,11 @@ try:
                             if line_e[0][-1]==':':                               
                                 label=line_e[0]                               
                                 length_label=len(label)
-                                label_name=label[0:length_label-1]                                
+                                label_name=label[0:length_label-1]                             
                                 assert label_name==line[1]                               
-                                index=l.index(line_e)
+                                index=l.index(line_e)-var_initial+label_emptyline
                                 labels[label_name]=decimalTobinary(index)
+                                break
                         typeE(line)
             elif len(line)==3:
                 if line[0][-1]==':':
@@ -255,7 +271,7 @@ try:
                     length_label=len(label)
                     label_name=label[0:length_label-1]
                     if label_name not in labels:
-                        labels[label_name]=decimalTobinary(count)
+                        labels[label_name]=decimalTobinary(count_i+label_emptyline)
                     line=line[1:]
 
                     if (len(line)==2):
@@ -270,7 +286,7 @@ try:
                                     length_label=len(label)
                                     label_name=label[0:length_label-1]                                
                                     assert label_name==line[1]                               
-                                    index=l.index(line_e)
+                                    index=l.index(line_e)-var_initial+label_emptyline
                                     labels[label_name]=decimalTobinary(index)
                             typeE(line)
                 else:
@@ -307,7 +323,7 @@ try:
                     label=line[0]
                     length_label=len(label)
                     label_name=label[0:length_label-1]
-                    labels[label_name]=decimalTobinary(count)
+                    labels[label_name]=decimalTobinary(count_i+label_emptyline)
                     line=line[1:]
 
                     if (len(line)==2):
@@ -322,7 +338,7 @@ try:
                                     length_label=len(label)
                                     label_name=label[0:length_label-1]                                
                                     assert label_name==line[1]                               
-                                    index=l.index(line_e)
+                                    index=l.index(line_e)-var_initial+label_emptyline
                                     labels[label_name]=decimalTobinary(index)
                             typeE(line)
                     elif len(line)==3:
@@ -363,7 +379,7 @@ try:
                     label=line[0]
                     length_label=len(label)
                     label_name=label[0:length_label-1]
-                    labels[label_name]=decimalTobinary(count)
+                    labels[label_name]=decimalTobinary(count_i+label_emptyline)
                     line=line[1:]
 
                 if 'FLAGS' not in line:
@@ -376,6 +392,7 @@ try:
                 assert False    
 
             count+=1
+            count_i+=1
 
     # GENERATING OUTPUT
     for i in output_list:
