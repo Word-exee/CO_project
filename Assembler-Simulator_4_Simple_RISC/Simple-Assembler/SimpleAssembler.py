@@ -1,8 +1,10 @@
 import sys
 
-variables={}
-labels={}
+variables={} # STORES ALL VARIABLES DECLARED
+labels={} # STORES ALL THE LABELS USED
 registers={'R0':'000','R1':'001','R2':'010','R3':'011','R4':'100','R5':'101','R6':'110','FLAGS':'111'}
+
+# CONTAINS OP CODE OF INSTRUCTIONS ALLOWED TO BE EXECUTED
 
 type_a={'add':'10000','sub':'10001','mul':'10110','xor':'11010','or':'11011','and':'11100'}
 type_b={'mov':'10010','rs':'11000','ls':'11001'}
@@ -10,6 +12,7 @@ type_c={'mov':'10011','div':'10111','not':'11101','cmp':'11110'}
 type_d={'ld':'10100','st':'10101'}
 type_e={'jmp':'11111','jlt':'01100','jgt':'01101','je':'01111'}
 
+# CONTAINS ALL THE INSTRUCTIONS
 all_instructions=[]
 while True:
     all_instructions=type_a.keys() |type_b.keys()|type_c.keys()|type_d.keys()|type_e.keys()
@@ -93,7 +96,7 @@ def typeE(instruction):
 
 def errorgen(instruction,line_number):
     #handling hlt
-    if l[-1]!=["hlt"]:
+    if l[-1][-1]!="hlt":
         print(f"ERROR @LINE{line_number}: SYNTAX ERROR: hlt instruction must be used at end")
         return 0
 
@@ -199,7 +202,6 @@ def errorgen(instruction,line_number):
         print(f"ERROR @LINE{line_number}: HLT INSTRUCTION NOT FOUND")
         return 0
 
-
 #INPUT
 
 l=[]
@@ -207,7 +209,7 @@ for line in sys.stdin:
     if line == "\n":
         pass
     else:
-        x=line.split()
+        x=line.strip().split()
         if len(x)==1 and x[0][-1]==':':
             label_name=x[0]
             label_name=label_name[:-1]
@@ -218,10 +220,15 @@ for line in sys.stdin:
         if line[0:3]!='var':
             count_instruction+=1
 
+#LINE 1: 'hlt'
+#LINE 2: label: hlt or type E
+#LINE 3: label: type_e or type_b,c,d
+#LINE 4: type a or label: type_b,c,d
+#LINE 5: label: type_a
 #LIST 'l' TRAVERSING USING FOR LOOP ('l' is where our input code stored)
 
 try:
-    assert l[-1][-1]=="hlt"  
+    assert l[-1][-1]=="hlt"
     for line in l:
         if line[0]=='var':
             assert flag_var==1
@@ -255,16 +262,24 @@ try:
                     if line[1] in labels:
                         typeE(line)
                     else:
+                        flag_lab=0
                         for line_e in l:
                             if line_e[0][-1]==':':                               
                                 label=line_e[0]                               
                                 length_label=len(label)
-                                label_name=label[0:length_label-1]                             
-                                assert label_name==line[1]                               
-                                index=l.index(line_e)-var_initial+label_emptyline
-                                labels[label_name]=decimalTobinary(index)
-                                break
-                        typeE(line)
+                                label_name=label[0:length_label-1]
+                                if label_name==line[1]:
+                                    flag_lab=1                        
+                                    assert label_name==line[1]                               
+                                    index=l.index(line_e)-var_initial+label_emptyline
+                                    labels[label_name]=decimalTobinary(index)
+                                    break
+                                else:
+                                    continue
+                        if flag_lab==1:
+                            typeE(line)
+                        else:
+                            assert False
             elif len(line)==3:
                 if line[0][-1]==':':
                     label=line[0]
@@ -279,16 +294,24 @@ try:
                         if line[1] in labels:
                             typeE(line)
                         else:
-                            
+                            flag_lab=0
                             for line_e in l:
                                 if line_e[0][-1]==':':                               
                                     label=line_e[0]                               
                                     length_label=len(label)
-                                    label_name=label[0:length_label-1]                                
-                                    assert label_name==line[1]                               
-                                    index=l.index(line_e)-var_initial+label_emptyline
-                                    labels[label_name]=decimalTobinary(index)
-                            typeE(line)
+                                    label_name=label[0:length_label-1]
+                                    if label_name==line[1]:
+                                        flag_lab=1                        
+                                        assert label_name==line[1]                               
+                                        index=l.index(line_e)-var_initial+label_emptyline
+                                        labels[label_name]=decimalTobinary(index)
+                                        break
+                                    else:
+                                        continue
+                            if flag_lab==1:
+                                typeE(line)
+                            else:
+                                assert False
                 else:
                     if line[0]=='mov':
                         if line[2][0]=='$':
@@ -331,16 +354,24 @@ try:
                         if line[1] in labels:
                             typeE(line)
                         else:
-                            
+                            flag_lab=0
                             for line_e in l:
                                 if line_e[0][-1]==':':                               
                                     label=line_e[0]                               
                                     length_label=len(label)
-                                    label_name=label[0:length_label-1]                                
-                                    assert label_name==line[1]                               
-                                    index=l.index(line_e)-var_initial+label_emptyline
-                                    labels[label_name]=decimalTobinary(index)
-                            typeE(line)
+                                    label_name=label[0:length_label-1]
+                                    if label_name==line[1]:
+                                        flag_lab=1                        
+                                        assert label_name==line[1]                               
+                                        index=l.index(line_e)-var_initial+label_emptyline
+                                        labels[label_name]=decimalTobinary(index)
+                                        break
+                                    else:
+                                        continue
+                            if flag_lab==1:
+                                typeE(line)
+                            else:
+                                assert False
                     elif len(line)==3:
                         if line[0]=='mov':
                             if line[2][0]=='$':
@@ -382,11 +413,14 @@ try:
                     labels[label_name]=decimalTobinary(count_i+label_emptyline)
                     line=line[1:]
 
-                if 'FLAGS' not in line:
-                    assert line[0] in type_a
-                    typeA(line)
+                    if 'FLAGS' not in line:
+                        assert line[0] in type_a
+                        typeA(line)
+                    else:
+                        assert False
                 else:
                     assert False
+                
 
             else:
                 assert False    
