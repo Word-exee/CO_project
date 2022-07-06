@@ -95,6 +95,7 @@ def typeE(instruction):
 
 
 def errorgen(instruction,line_number):
+    
     #handling hlt
     if l[-1][-1]!="hlt":
         print(f"ERROR @LINE{line_number}: SYNTAX ERROR: hlt instruction must be used at end")
@@ -156,6 +157,12 @@ def errorgen(instruction,line_number):
                 if(instruction[i]) not in registers.keys():
                     print(f"ERROR @LINE{line_number}: INVALID INPUT OF REGISTERS")
                     return 0
+    
+    #HAMDLING FLAG
+    if instruction[0]=="mov":
+        if instruction[2]=="FLAGS":
+            print(f"ERROR @LINE{line_number}: INVALID USE OF FLAG IN THE COMMAND")
+            return 0
                     
     # handling $
     if instruction[0] in type_b.keys():
