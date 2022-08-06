@@ -6,8 +6,8 @@ registers={'R0':'000','R1':'001','R2':'010','R3':'011','R4':'100','R5':'101','R6
 
 # CONTAINS OP CODE OF INSTRUCTIONS ALLOWED TO BE EXECUTED
 
-type_a={'add':'10000','sub':'10001','mul':'10110','xor':'11010','or':'11011','and':'11100'}
-type_b={'mov':'10010','rs':'11000','ls':'11001'}
+type_a={'add':'10000','sub':'10001','mul':'10110','xor':'11010','or':'11011','and':'11100','addf':'00000','subf':'00001'}
+type_b={'mov':'10010','rs':'11000','ls':'11001','movf':'00010'}
 type_c={'mov':'10011','div':'10111','not':'11101','cmp':'11110'}
 type_d={'ld':'10100','st':'10101'}
 type_e={'jmp':'11111','jlt':'01100','jgt':'01101','je':'01111'}
@@ -52,6 +52,42 @@ def decimalTobinary(n):
     n_bin=('0'*zero_left)+n_bin
     return n_bin
 
+def DecimalTobinary(n1):
+    n,num=n1.split(".")
+    n_bin=''
+    n=int(n)
+    while n>0:
+        d=n%2
+        n=n//2
+        n_bin+=str(d)
+    n_bin=n_bin[-1::-1]
+    num=("0."+num)
+    num=float(num)
+    x=""
+    count=0
+    while (num%1!=0 and count<6-len(n_bin)):
+        num=num*2
+        x=x+str(num)[0]
+        num=float("0"+str(num)[1::])
+        count=count+1
+    lis=[n_bin,x]
+    return lis
+
+def FloatToIeee(num):
+    assert float(num)<252
+    whole,decimal=DecimalTobinary(num)
+    exponent=len(whole)-1
+    assert int(exponent)<=111
+    mantissa=whole[1::]+decimal
+    assert int(mantissa)<=11111
+    for j in range(5-len(mantissa)):
+        mantissa=mantissa+"0"
+    exponent=bin(exponent)[2::]
+    for j in  range(3-len(exponent)):
+        exponent="0"+exponent
+    Ieee=exponent+mantissa
+    return Ieee
+
 def typeA(instruction):
     s=''
     s+=type_a[instruction[0]]
@@ -93,13 +129,39 @@ def typeE(instruction):
     s+=labels[instruction[1]]
     output_list.append(s)
 
+def typeF(instruction):
+    s=''
+    s+=type_b[instruction[0]]
+    s+=registers[instruction[1]]
+    imm=instruction[2]
+    imm=imm[1:]
+    ieee=FloatToIeee(imm)
+    s+=ieee
+    output_list.append(s)
+
+# decimal in movf check
+# assert for 252 ya mantissa ya exponent
 
 def errorgen(instruction,line_number):
-    
+
+    # Decimal in movf
+    if instruction[0]=='movf':
+        val_float=instruction[2][1:]
+        if val_float.isdigit():
+            print(f"ERROR @LINE{line_number}: INTEGER VALUE DETECTED FOR MOVF INSTRUCTION")
+            return 0
+        val_float=float(val_float)
+        if val_float>252 or val<1:
+            print(f"ERROR @LINE{line_number}: IMMEDIATE VALUE ENTERED CANNOT BE GREATER THAN 252 OR LESS THAN 1")
+            return 0
+        if int(exponent)>111 or int(mantissa)>11111:
+            print(f"ERROR @LINE{line_number}: INVALID IMMEDIATE INPUT. IT CANNOT BE REPRESENTED IN 8 BIT FLOATING POINT FORM")
+
     #handling hlt
     if l[-1][-1]!="hlt":
-        print(f"ERROR @LINE{line_number}: SYNTAX ERROR: hlt instruction must be used at end")
+        print(f"ERROR @LINE{len(l)}: SYNTAX ERROR: hlt instruction must be used at end")
         return 0
+
 
     # ILLEGAL/INVALID INSTRUCTION
     if instruction[0] not in all_instructions:
@@ -113,6 +175,12 @@ def errorgen(instruction,line_number):
                 if(instruction[i]) not in registers.keys():
                     print(f"ERROR @LINE{line_number}: INVALID INPUT OF REGISTERS")
                     return 0
+
+    #variable label not declared
+    if instruction[0] in type_e.keys():
+        if instruction[1] not in labels.keys():
+            print(f"ERROR @LINE{line_number}: GENERAL ERROR : label not declared")
+            return 0  
     
     # Extra length of type registers in type a
     if instruction[0] in type_a.keys():
@@ -139,17 +207,11 @@ def errorgen(instruction,line_number):
             return 0
     
     # Extra length of type registers in type e
-    if instruction[0] in type_d.keys():
+    if instruction[0] in type_e.keys():
         if len(instruction)!=2:
             print(f"ERROR @LINE{line_number}: GENERAL ERROR: invalid inputs for instructions")
             return 0
     
-    # Extra length of type registers in type f
-    if instruction[0] in type_d.keys():
-        if len(instruction)!=1:
-            print(f"ERROR @LINE{line_number}: GENERAL ERROR: invalid inputs for instructions")
-            return 0
-
     # USE OF INVALID REGISTERS FOR LEN 4
     if len(instruction)==4:
         for i in range(1,4):
@@ -195,19 +257,14 @@ def errorgen(instruction,line_number):
         print(f"ERROR @LINE{line_number}: VARIABLES TO BE DECLARED AT THE STARTING ONLY")
         return 0     
 
-    #variable label not declared
-    if instruction[0] in type_e.keys():
-        if instruction[1] not in labels.keys():
-            print(f"ERROR @LINE{line_number}: GENERAL ERROR : label not declared")
-            return 0  
-    
     # HLT INSTRUCTION DECLARED IN MIDDLE
     if count!=len(l) and instruction[0]=="hlt":
         print(f"ERROR @LINE{line_number}: HLT INSTRUCTION MUST BE DECLARED AT THE END OF THE PROGRAM. ")
         return 0
     elif count==len(l) and len(instruction)==1 and instruction[0]!='hlt':
-        print(f"ERROR @LINE{line_number}: HLT INSTRUCTION NOT FOUND")
+        print(f"ERROR @LINE{len(l)}: HLT INSTRUCTION NOT FOUND")
         return 0
+
 
 #INPUT
 
@@ -233,6 +290,7 @@ for line in sys.stdin:
 #LINE 4: type a or label: type_b,c,d
 #LINE 5: label: type_a
 #LIST 'l' TRAVERSING USING FOR LOOP ('l' is where our input code stored)
+
 
 try:
     assert l[-1][-1]=="hlt"
@@ -331,6 +389,15 @@ try:
                                 typeC(line)
                             else:
                                 assert False
+                    elif line[0]=="movf":
+                        if line[1]!='FLAGS':
+                            val_float=line[2][1:]
+                            if val_float.isdigit():
+                                assert False
+                            else:
+                                typeF(line)
+                        else:
+                            assert False
                     else:
                         if 'FLAGS' not in line:
                             if line[0] in type_b:
@@ -391,6 +458,11 @@ try:
                                     typeC(line)
                                 else:
                                     assert False
+                        elif line[0]=="movf":
+                            if line[1]!='FLAGS':
+                                typeF(line)
+                            else:
+                                assert False
                         else:
                             if 'FLAGS' not in line:
                                 if line[0] in type_b:
