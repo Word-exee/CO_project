@@ -1,0 +1,107 @@
+space=input('ENTER MEMORY SPACE: ')
+space_l=space.split()
+#print(space_l)
+
+# BE SURE OF MB or Mb where B->Bytes and b->bits
+
+memory_addressed=input('ENTER THE TYPE OF MEMORY ADDRESSED: ')
+mem_l=memory_addressed.split()
+
+# Type1 QUestion:
+len_instruction=int(input("PLEASE ENTER THE LENGTH OF AN INSTRUCTION (in bits): "))
+len_register=int(input("PLEASE ENTER THE LENGTH OF REGISTER (in bits): "))
+
+degree_mem={'MB':23,'GB':33,'KB':13,'B':3,'b':1,'Kb':10,'Mb':20,'Gb':30}
+
+if mem_l[0]=='Word':
+    cpu_bits=int(input('ENTER THE NUMBER OF BITS CPU HAS: '))
+else:
+    cpu_bits=0
+
+mem_val=int(space_l[0])
+i=0
+while mem_val!=1:
+    i+=1
+    mem_val/=2
+
+i=len_instruction-(i+degree_mem[space_l[1]])-cpu_bits
+i+=len_register
+
+# for op code bits
+bits_opcode=len_instruction-i-len_register
+
+# Filler bits
+filler_bits=len_instruction-(2*len_register)-bits_opcode
+
+# Max Instructions ISA can support
+max_instructions=2**bits_opcode
+
+# Max number of registers allowed
+max_registers=2**len_register
+
+print(f"minimum bits needed to represent an address : {i}")
+print(f"number of bits needed by opcode: {bits_opcode}")
+print(f"number of filler bits required:{filler_bits}")
+print(f"max number of instructions that can be used:{max_instructions}")
+print(f"max number of registers that can be used: {max_registers}")
+
+print("******************************************************************************************************")
+
+# TYPE 2 QUESTION
+
+cpu_bits=int(input("ENTER THE NUMBER OF BITS CPU HAS: "))
+change_s=input("ENTER TO WHICH TYPE OF ADDRESSABLE MEMORY WOULD YOU LIKE TO CHANGE THE PRESENT ADDRESSABLE MEMORY FORM INTO: ")
+change=change_s.split()
+
+decrease_by={'Byte':8,'Nibble':4,'Bits':1,'Word':cpu_bits}
+current=decrease_by[mem_l[0]]
+i=0
+while current!=1:
+    i+=1
+    current/=2
+
+final=decrease_by[change[0]]
+j=0
+while final!=1:
+    j+=1
+    final/=2
+
+print(i-j)
+
+print('*************************************************************************************************')
+
+cpu_bits=int(input("ENTER THE NUMBER OF BITS CPU HAS: "))
+address_pins=int(input("ENTER THE NUMBER OF ADDRESS PINS THE CPU HAS: "))
+memory_addressed=input('ENTER THE TYPE OF MEMORY ADDRESSED: ')
+mem_l=memory_addressed.split()
+
+initial=0
+if mem_l[0]=='Byte':
+    initial=0
+elif mem_l[0]=='Nibble':
+    initial=-1
+elif mem_l[0]=='Bits':
+    initial=-3
+elif mem_l[0]=='Word':
+    initial=0
+    current=cpu_bits
+    while current!=1:
+        initial+=1
+        current/=2
+    initial-=3
+
+power=address_pins+initial
+if power>30:
+    i=power-30
+    print(f"{2**i}GB")
+elif power>20:
+    i=power-20
+    print(f"{2**i}MB")
+elif power>10:
+    i=power-10
+    print(f"{2**i}KB")
+else:
+    print(f"{2**i}B")
+
+
+
