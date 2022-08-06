@@ -1,4 +1,5 @@
 import sys
+import matplotlib.pyplot as plt
 
 # ******************************************************************************************************************
 # INPUT*************************************************************************************************************
@@ -153,6 +154,8 @@ def load(line):
     pc_line[reg_index[reg_addr[line[0:3]]]]=decimalTobinary_16bits(reg_value[reg_addr[line[0:3]]])
     reg_value['FLAGS']=0
     pc_line[reg_index['FLAGS']]='0000000000000000'
+    x_axis.append(cycle)
+    y_axis.append(line[3:])
 
 def store(line):
     value_var=reg_value[reg_addr[line[0:3]]] # extract the value of register
@@ -160,6 +163,8 @@ def store(line):
     l_memory[index]=decimalTobinary_16bits(value_var) # store the value at the index pointed by mem_addr
     reg_value['FLAGS']=0
     pc_line[reg_index['FLAGS']]='0000000000000000'
+    x_axis.append(cycle)
+    y_axis.append(line[3:])
 
 def divide(line): # div r3 r4 means R0=quo(r3/r4) and R1=rem(r3/r4)
     reg_value['R0']=int((reg_value[reg_addr[line[0:3]]])/(reg_value[reg_addr[line[3:]]]))
@@ -185,6 +190,8 @@ def unconditional_jump(line):
     pc_line[0]=decimalTobinary_8bits(i)
     reg_value['FLAGS']=0
     pc_line[reg_index['FLAGS']]='0000000000000000'
+    x_axis.append(cycle)
+    y_axis.append(line[0:])
     return index
 
 def less_than_jump(line):
@@ -193,6 +200,8 @@ def less_than_jump(line):
         pc_line[0]=decimalTobinary_8bits(i)
         reg_value['FLAGS']=0
         pc_line[reg_index['FLAGS']]='0000000000000000'
+        x_axis.append(cycle)
+        y_axis.append(line[0:])  
         return index
     else:
         reg_value['FLAGS']=0
@@ -205,6 +214,8 @@ def greater_than_jump(line):
         pc_line[0]=decimalTobinary_8bits(i)
         reg_value['FLAGS']=0
         pc_line[reg_index['FLAGS']]='0000000000000000'
+        x_axis.append(cycle)
+        y_axis.append(line[0:])
         return index
     else:
         reg_value['FLAGS']=0
@@ -217,6 +228,8 @@ def equal_jump(line):
         pc_line[0]=decimalTobinary_8bits(i)
         reg_value['FLAGS']=0
         pc_line[reg_index['FLAGS']]='0000000000000000'
+        x_axis.append(cycle)
+        y_axis.append(line[0:])
         return index
     else:
         reg_value['FLAGS']=0
@@ -296,6 +309,10 @@ l_memory=[] # IT IS A LIST WHICH REPRESENTS 256 LINES OF MEMORY
 
 s='0000000000000000' # 16 BIT MEMORY
 
+x_axis=[]
+cycle=0
+
+y_axis=[]
 
 # ******************************************************************************************************************
 # FORMING MEMORY 512 BYTE DOUBLE ADDRESSABLE MEMORY (256 LINES)*****************************************************
@@ -317,6 +334,9 @@ for j in range(256):
 # The loop ends when i has reached len(l)-1 which is going to be halt instruction and after that we print the memory
 
 while(i<len(l)):
+
+    x_axis.append(cycle)
+    y_axis.append(pc_line[0])
 
     opcode=l[i][0:5] # EXTRACTING OPCODE AND THEN PERFORMING THE OPERATION
 
@@ -450,11 +470,25 @@ while(i<len(l)):
         print(*pc_line)
         break
 
+    cycle+=1
+
 for i in l_memory:
     print(i)
 
 
 # SCATTER PLOT X--> CYCLE NUMBER AND Y-->MEMORY INSTRUCTION BEING ACCESSED
+
+plt.scatter(x_axis,y_axis,c="red")
+plt.show()
+
+
+
+
+
+
+
+
+        
 
 
 
