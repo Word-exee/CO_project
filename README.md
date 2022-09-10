@@ -1,4 +1,3 @@
-# CSE112-22-Assignment-SimpleAssembler
-This is our CO MIDSEM EVALUATION GROUP PROJECT!
+# CSE112-22-Assignment-SimpleAssembler-and-Simulator
 LANGUAGE USED : PYTHON
 MEMBERS: CHIRAG MADAAM , AMAN KUDIYAL , SHANTANU PRAKASH.
